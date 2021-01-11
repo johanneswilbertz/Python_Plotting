@@ -2,7 +2,12 @@
 """
 Created on Fri Jan  8 17:33:17 2021
 
-@author: -
+@author: Johannes Wilbertz, Ksilink
+
+This script apends and visualizes the results of multiple imaging data files, representing biological replicates.
+Also the technical replicates per biological replicate are plotted and p-value statistics are calculated based on the 
+biological replicates. 
+
 """
 import numpy as np
 import scipy
