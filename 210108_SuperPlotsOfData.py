@@ -2,7 +2,14 @@
 """
 Created on Fri Jan  8 17:33:17 2021
 
-@author: -
+@author: Johannes Wilbertz, Ksilink
+
+This script apends and visualizes the results of multiple imaging data files, representing biological replicates.
+Also the technical replicates per biological replicate are plotted and p-value statistics are calculated based on the 
+biological replicates. 
+
+Based on idea & Python code provided here: https://rupress.org/jcb/article/219/6/e202001064/151717/SuperPlots-Communicating-reproducibility-and
+
 """
 import numpy as np
 import scipy
@@ -68,7 +75,7 @@ ax.set_ylim([0, combined[datacolumn].max()])
 ax.set_xticklabels(ax.get_xticklabels(),rotation=30)
 sns.despine()
 
-# Stats plotting based on ordered 
+# Stats plotting based on ordered groups
 for g in range(1, len(plot_order)): 
     xgroup2 = (plot_order[g]) 
     statistic, pvalue = scipy.stats.ttest_rel(ReplicateAvePivot[xgroup1], ReplicateAvePivot[xgroup2])
