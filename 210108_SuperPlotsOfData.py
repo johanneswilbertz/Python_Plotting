@@ -8,6 +8,8 @@ This script apends and visualizes the results of multiple imaging data files, re
 Also the technical replicates per biological replicate are plotted and p-value statistics are calculated based on the 
 biological replicates. 
 
+Based on idea & Python code provided here: https://rupress.org/jcb/article/219/6/e202001064/151717/SuperPlots-Communicating-reproducibility-and
+
 """
 import numpy as np
 import scipy
