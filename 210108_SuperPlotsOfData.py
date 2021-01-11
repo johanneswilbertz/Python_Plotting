@@ -73,7 +73,7 @@ ax.set_ylim([0, combined[datacolumn].max()])
 ax.set_xticklabels(ax.get_xticklabels(),rotation=30)
 sns.despine()
 
-# Stats plotting based on ordered 
+# Stats plotting based on ordered groups
 for g in range(1, len(plot_order)): 
     xgroup2 = (plot_order[g]) 
     statistic, pvalue = scipy.stats.ttest_rel(ReplicateAvePivot[xgroup1], ReplicateAvePivot[xgroup2])
