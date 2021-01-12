@@ -2,14 +2,7 @@
 """
 Created on Fri Jan  8 17:33:17 2021
 
-@author: Johannes Wilbertz, Ksilink
-
-This script apends and visualizes the results of multiple imaging data files, representing biological replicates.
-Also the technical replicates per biological replicate are plotted and p-value statistics are calculated based on the 
-biological replicates. 
-
-Based on idea & Python code provided here: https://rupress.org/jcb/article/219/6/e202001064/151717/SuperPlots-Communicating-reproducibility-and
-
+@author: -
 """
 import numpy as np
 import scipy
@@ -50,12 +43,14 @@ drop_numerical_outliers(combined)
 xgrouping = "Class_CPD" # Treatment Category
 xgroup1 = "WT DMSO" # Statistics compared to this group
 replicate = "Plate" #Replicate
-datacolumn = "avg_intensity_TH_SNCA_SNCA"
+datacolumn = "skelet_length_MAP2_per_nuclei" # Nuclei_Tot, Nuclei_dead, avg_intensity_TH, avg_intensity_SNCA, avg_intensity_TH_SNCA_SNCA, 
+                                             # ratio_nuclei_MAP2, branching_points_MAP2_per_nuclei, skelet_length_MAP2_per_nuclei
 ytitle = 'Norm.' + ' ' + datacolumn
 plot_order=["WT DMSO", "WT PEP005", "WT Prostratin", "Mut DMSO", "Mut PEP005", "Mut Prostratin"]
 
 # Generating a SuperPlotOfData
-plt.figure()
+
+# Create new figure and two subplots
 fig, ax = plt.subplots(figsize=(10, 6))
 ax = sns.set_context("talk", font_scale=1.5, rc={"lines.linewidth": 3})
 
@@ -71,16 +66,15 @@ ax.grid(False)
 ax.legend_.remove() 
 ax.set(xlabel=None)
 ax.set(ylabel=ytitle)
-ax.set_ylim([0, combined[datacolumn].max()])
 ax.set_xticklabels(ax.get_xticklabels(),rotation=30)
 sns.despine()
 
-# Stats plotting based on ordered groups
-for g in range(1, len(plot_order)): 
-    xgroup2 = (plot_order[g]) 
-    statistic, pvalue = scipy.stats.ttest_rel(ReplicateAvePivot[xgroup1], ReplicateAvePivot[xgroup2])
-    P_value = str(float(round(pvalue, 3))) 
-    x1, x2 = 0, g
-    y, h, col = combined[datacolumn].max() + (g-1)/14, (g-1)/14, 'k'
-    ax.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col) 
-    ax.text((x1+x2)*.5, y+h, "P = "+P_value, ha='center', va='bottom', color=col, size=18)
+# # Stats plotting based on ordered 
+# for g in range(1, len(plot_order)): 
+#     xgroup2 = (plot_order[g]) 
+#     statistic, pvalue = scipy.stats.ttest_rel(ReplicateAvePivot[xgroup1], ReplicateAvePivot[xgroup2])
+#     P_value = str(float(round(pvalue, 3))) 
+#     x1, x2 = 0, g
+#     y, h, col = combined[datacolumn].max()/1.3 + (g-1)/14, (g-1)/7, 'k'
+#     ax.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col) 
+#     ax.text((x1+x2)*.5, y+h, "P = "+P_value, ha='center', va='bottom', color=col, size=18)
