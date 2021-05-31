@@ -1,8 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jan  8 17:33:17 2021
+Creating SuperPlotsOfData with statistics --> Overlay if two swarmplots creates transparent
+display of all underlying data, including technical and biological replicates.
 
-@author: -
+Johannes Wilbertz, PhD @ Ksilink, 31 May 2020
+
+Credits:
+
+1. SuperPlotsOfData is a concept to visualize technical and biological replicates transpaently 
+and was publsihed by Lord et al. JCB, 2020 (https://doi.org/10.1083/jcb.202001064). 
+
+2. The package "statanot" for plotting statistics outside of the figure is form webermarcolivier 
+and colleagues (https://github.com/webermarcolivier/statannot).
+
+3. The code for removal of outliers in numerical and non-numerical datasets is originally from
+KeyMaker00 (https://stackoverflow.com/a/56725366).
+
 """
 import numpy as np
 import scipy
@@ -10,53 +23,51 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
+from statannot import add_stat_annotation
 
 # Generate dataframes containing individual replicates
-df1 = pd.read_csv(r'L:\PD\Experiment\Maturation_18\Output_Data\CSV\raw_data_normed_median_dmso_DRC_Tool.csv')
-df2 = pd.read_csv(r'L:\PD\Experiment\Maturation_20\Output_Data\CSV\raw_data_normed_median_dmso_with_conditions.csv')
+df = pd.read_csv(r'L:\PD\Experiment\Maturation_36\Output_Data\CSV\raw_data_normed_median_dmso_snca.csv')
 
-# Add plate/replicate number
-df1.loc[df1['Plate'].str.contains('p1'), 'Plate'] = 'Plate1'
-df1.loc[df1['Plate'].str.contains('p2'), 'Plate'] = 'Plate2'
-df2.loc[df2['Plate'].str.contains('p1'), 'Plate'] = 'Plate3'
-df2.loc[df2['Plate'].str.contains('p2'), 'Plate'] = 'Plate4'
+# Data wrangling if needed
 
-# Append dataframes and adjust organisation for plotting
-combined = df1.append(df2)
-combined.loc[combined['CPD_ID'].str.contains('Prostratine'), 'CPD_ID'] = 'Prostratin' # Correct misspelling
-combined['Class_CPD'] = combined['Class'] + ' ' + combined['CPD_ID']
-combined = combined.sort_values(['Class_CPD', 'Plate']) # Sorting is necessary to plot averages accurately on dataclouds
-combined_columns = combined.columns
+# # Drop columns which are not needed
+# df = df.drop(columns=['Nuclei_Big'])
 
-# Drop outliers based on z-score threshold
-def drop_numerical_outliers(combined, z_thresh=3):
-    # Constrains will contain `True` or `False` depending on if it is a value below the threshold.
-    constrains = combined.select_dtypes(include=[np.number]) \
-        .apply(lambda x: np.abs(stats.zscore(x, nan_policy='omit')) < z_thresh) \
-        .all(axis=1)
-    # Drop (inplace) values set to be rejected
-    combined.drop(combined.index[~constrains], inplace=True)
+# # Rename some data tags for consistency
+# df.loc[df['tags'].str.contains('TEST123'), 'tags'] = 'TESTABC' 
+# df.loc[df['tags'].str.contains('TEST456'), 'tags'] = 'TESTDEF' 
+
+# Adjust organisation for plotting
+df = df.sort_values(['tags', 'Plate']) # Sorting is necessary to plot averages accurately on dataclouds
+df_columns = df.columns
+combined = df
+
+# # Drop outliers based on z-score threshold
+# def drop_numerical_outliers(combined, z_thresh=3):
+#     # Constrains will contain `True` or `False` depending on if it is a value below the threshold.
+#     constrains = combined.select_dtypes(include=[np.number]) \
+#         .apply(lambda x: np.abs(stats.zscore(x, nan_policy='omit')) < z_thresh) \
+#         .all(axis=1)
+#     # Drop (inplace) values set to be rejected
+#     combined.drop(combined.index[~constrains], inplace=True)
     
-drop_numerical_outliers(combined)
+# drop_numerical_outliers(combined)
 
 # Data for plotting and statistics calculations
-xgrouping = "Class_CPD" # Treatment Category
-xgroup1 = "WT DMSO" # Statistics compared to this group
-replicate = "Plate" #Replicate
-datacolumn = "skelet_length_MAP2_per_nuclei" # Nuclei_Tot, Nuclei_dead, avg_intensity_TH, avg_intensity_SNCA, avg_intensity_TH_SNCA_SNCA, 
-                                             # ratio_nuclei_MAP2, branching_points_MAP2_per_nuclei, skelet_length_MAP2_per_nuclei
+xgrouping = "tags" # Treatment Category
+replicate = "Plate" #Kind of used replicate
+datacolumn = "avg_intensity_SNCA" # Nuclei_Tot, Nuclei_dead, avg_intensity_SNCA, sum_intensity_per_nuclei_SNCA
+                                   # ratio_nuclei_MAP2, surface_MAP2, branching_points_MAP2_per_nuclei, skelet_length_MAP2_per_nuclei
 ytitle = 'Norm.' + ' ' + datacolumn
-plot_order=["WT DMSO", "WT PEP005", "WT Prostratin", "Mut DMSO", "Mut PEP005", "Mut Prostratin"]
+plot_order=["Ctrl;DMSO", "Ctrl;PEP005", "Ctrl;Prostratin", "Tripli;DMSO", "Tripli;PEP005", "Tripli;Prostratin"]
 
 # Generating a SuperPlotOfData
 
 # Create new figure and two subplots
-fig, ax = plt.subplots(figsize=(10, 6))
 ax = sns.set_context("talk", font_scale=1.5, rc={"lines.linewidth": 3})
 
 ReplicateAverages = combined.groupby([xgrouping, replicate], as_index=False).agg({datacolumn: "median"})
-ReplicateAverages = ReplicateAverages.sort_values(['Class_CPD', 'Plate']) # Sorting is necessary to plot averages accurately on dataclouds
-ReplicateAvePivot = ReplicateAverages.pivot_table(columns=xgrouping, values=datacolumn, index=replicate) 
+ReplicateAverages = ReplicateAverages.sort_values(['tags', 'Plate']) # Sorting is necessary to plot averages accurately on dataclouds
 
 ax = sns.stripplot(x=xgrouping, y=datacolumn, hue=replicate, size=7, data=combined, order=plot_order) 
 ax = sns.stripplot(x=xgrouping, y=datacolumn, hue=replicate, size=20, edgecolor="k", linewidth=2, data=ReplicateAverages, order=plot_order)
@@ -66,15 +77,15 @@ ax.grid(False)
 ax.legend_.remove() 
 ax.set(xlabel=None)
 ax.set(ylabel=ytitle)
-ax.set_xticklabels(ax.get_xticklabels(),rotation=30)
+ax.set_xticklabels(ax.get_xticklabels(),rotation=45, ha='right', rotation_mode="anchor")
 sns.despine()
 
-# # Stats plotting based on ordered 
-# for g in range(1, len(plot_order)): 
-#     xgroup2 = (plot_order[g]) 
-#     statistic, pvalue = scipy.stats.ttest_rel(ReplicateAvePivot[xgroup1], ReplicateAvePivot[xgroup2])
-#     P_value = str(float(round(pvalue, 3))) 
-#     x1, x2 = 0, g
-#     y, h, col = combined[datacolumn].max()/1.3 + (g-1)/14, (g-1)/7, 'k'
-#     ax.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col) 
-#     ax.text((x1+x2)*.5, y+h, "P = "+P_value, ha='center', va='bottom', color=col, size=18)
+# # OPTION 1: Stats plotting for total population of all technical replicates from all biological replicates. Careful: High N = small p-value. Look at effect size!
+# add_stat_annotation(ax, data=combined, x=xgrouping, y=datacolumn, order=plot_order,
+#                     box_pairs=[("Ctrl;DMSO", "Tripli;DMSO"), ("Ctrl;DMSO", "Ctrl;PEP005"), ("Tripli;DMSO", "Tripli;PEP005")],
+#                     test='Mann-Whitney', text_format='star', loc='outside', verbose=2)
+
+# OPTION 2: Stats plotting only for means of biological replicates.   
+add_stat_annotation(ax, data=ReplicateAverages, x=xgrouping, y=datacolumn, order=plot_order,
+                    box_pairs=[("Ctrl;DMSO", "Tripli;DMSO"), ("Ctrl;DMSO", "Ctrl;PEP005"), ("Tripli;DMSO", "Tripli;PEP005")],
+                    test='Mann-Whitney', text_format='star', loc='outside', verbose=2)
