@@ -80,12 +80,12 @@ ax.set(ylabel=ytitle)
 ax.set_xticklabels(ax.get_xticklabels(),rotation=45, ha='right', rotation_mode="anchor")
 sns.despine()
 
-# # OPTION 1: Stats plotting for total population of all technical replicates from all biological replicates. Careful: High N = small p-value. Look at effect size!
-# add_stat_annotation(ax, data=combined, x=xgrouping, y=datacolumn, order=plot_order,
-#                     box_pairs=[("Ctrl;DMSO", "Tripli;DMSO"), ("Ctrl;DMSO", "Ctrl;PEP005"), ("Tripli;DMSO", "Tripli;PEP005")],
-#                     test='Mann-Whitney', text_format='star', loc='outside', verbose=2)
-
-# OPTION 2: Stats plotting only for means of biological replicates.   
-add_stat_annotation(ax, data=ReplicateAverages, x=xgrouping, y=datacolumn, order=plot_order,
+# OPTION 1: Stats plotting for total population of all technical replicates from all biological replicates. Careful: High N = small p-value. Look at effect size!
+add_stat_annotation(ax, data=combined, x=xgrouping, y=datacolumn, order=plot_order,
                     box_pairs=[("Ctrl;DMSO", "Tripli;DMSO"), ("Ctrl;DMSO", "Ctrl;PEP005"), ("Tripli;DMSO", "Tripli;PEP005")],
-                    test='Mann-Whitney', text_format='star', loc='outside', verbose=2)
+                    test='t-test_welch', text_format='star', loc='outside', verbose=2)
+
+# # OPTION 2: Stats plotting only for means of biological replicates.   
+# add_stat_annotation(ax, data=ReplicateAverages, x=xgrouping, y=datacolumn, order=plot_order,
+#                     box_pairs=[("Ctrl;DMSO", "Tripli;DMSO"), ("Ctrl;DMSO", "Ctrl;PEP005"), ("Tripli;DMSO", "Tripli;PEP005")],
+#                     test='t-test_welch', text_format='star', loc='outside', verbose=2)
