@@ -14,22 +14,23 @@ import dabest
 import matplotlib.pyplot as plt
 
 # Generate dataframes containing individual replicates
-df = pd.read_csv(r'L:\PD\Experiment\Maturation_35\Output_Data\CSV_400\raw_data_normed_median_dmso_snca_400.csv')
+df = pd.read_csv(r'L:\PD\Experiment\Maturation_37\Output_Data\CSV\raw_data_normed_median_dmso_snca.csv')
 
-# Rename some data tags for consistency
-df.loc[df['tags'].str.contains('Prostratin;WT'), 'tags'] = 'WT+Pro' 
-df.loc[df['tags'].str.contains('PEP005;WT'), 'tags'] = 'WT+PEP' 
-df.loc[df['tags'].str.contains('WT;DMSO'), 'tags'] = 'WT+DMSO' 
-df.loc[df['tags'].str.contains('Mut;DMSO'), 'tags'] = 'GS+DMSO' 
-df.loc[df['tags'].str.contains('Mut;PEP005'), 'tags'] = 'GS+PEP' 
-df.loc[df['tags'].str.contains('Mut;Prostratin'), 'tags'] = 'GS+Pro' 
+# # Rename some data tags for consistency (if necessary)
+# df.loc[df['tags'].str.contains('Prostratin;WT'), 'tags'] = 'WT+Pro'  
 
 # Overview of data categories
 df_columns = df.columns
 
+# Plot info
+data=df
+x_grouping ="tags"
+datacolumn = "sum_intensity_TH_SNCA_SNCA"
+plot_order=("Ctrl;DMSO", "Ctrl;PEP005", "Ctrl;Prostratin", "Tripli;DMSO", "Tripli;PEP005", "Tripli;Prostratin")
+
 # Load the above data into `dabest`.
-df_dabest = dabest.load(data=df, x="tags", y="Nuclei_dead",
-                          idx=("WT+DMSO", "WT+PEP", "WT+Pro", "GS+DMSO", "GS+PEP", "GS+Pro"))
+df_dabest = dabest.load(data=data, x=x_grouping, y=datacolumn,
+                          idx=plot_order)
 
 # Produce a Cumming estimation plot. Choose "median" instead of "mean" for skewed distributions. 
 plt.style.use("seaborn-ticks")
@@ -39,8 +40,8 @@ f = df_dabest.median_diff.plot(raw_marker_size=3); #contrast_ylim=(-0.15, 0.4)
 rawswarm_axes = f.axes[0]
 contrast_axes = f.axes[1]
 
-# rawswarm_axes.set_xticklabels(rawswarm_axes.get_xticklabels(),rotation=45, ha='right', rotation_mode="anchor")
-# contrast_axes.set_xticklabels(contrast_axes.get_xticklabels(),rotation=45, ha='right', rotation_mode="anchor")
+rawswarm_axes.set_xticklabels(rawswarm_axes.get_xticklabels(),rotation=45, ha='right', rotation_mode="anchor")
+contrast_axes.set_xticklabels(contrast_axes.get_xticklabels(),rotation=45, ha='right', rotation_mode="anchor")
 
 
 """

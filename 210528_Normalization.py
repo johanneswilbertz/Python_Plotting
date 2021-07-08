@@ -168,9 +168,9 @@ def remove_outliers_by_plate(df_in, sigma, method, neg, pos):
 
 if __name__ == '__main__':
 
-	df = pd.read_csv("L:\\PD\\Experiment\\Maturation_26\\Output_Data\\CSV\\raw_data.csv", index_col=['Plate', 'Well'])
+	df = pd.read_csv(r"L:\PD\Experiment\Maturation_35\Output_Data_NewFeatures\210706_NewFeatures_2\Combined_p1_p2_p3.csv", index_col=['Plate', 'Well'])
 
-	df.drop(['Class', 'CPD_ID', 'Experiment', 'Exp_CPD'], axis=1, inplace=True)
+   # df.drop(['SNCA#20210706_184712', 'SNCA#20210706_184714', 'SNCA#20210706_184713'], axis=1, inplace=True)
 
 	sigma = 3
 	# method = "std"
@@ -181,9 +181,9 @@ if __name__ == '__main__':
 
 	print('Sep')
 
-	df_norm = norm_centered_by_plate(df, norm_type=method, neg="A18944;no treat", pos="Edi001A;no treat")
+	df_norm = norm_centered_by_plate(df, norm_type=method, neg="WT + DMSO", pos="G2019S + DMSO")
 
 	print(df_norm)
 
 # Save as CSV file
-df_norm.to_csv(r"L:\\PD\\Experiment\\Maturation_26\\Output_Data\\CSV\\raw_data_normed.csv", index = False)
+df_norm.to_csv(r'L:\PD\Experiment\Maturation_35\Output_Data_NewFeatures\210706_NewFeatures_2\Combined_p1_p2_p3_normed.csv', index = False)
