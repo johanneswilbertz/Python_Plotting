@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
+Johannes Wilbertz, PhD (Ksilink)
 
-This is a temporary script file.
+- Script to plot catergorical data as boxplots including all datapoints as swarmplot.
+- Outliers can be removed based on Z-score.(based on: https://stackoverflow.com/a/56725366)
+- Statistical comparisons can be added between groups. Different tests available (based on Statannot: https://github.com/webermarcolivier/statannot) 
+
 """
 
 import numpy as np
