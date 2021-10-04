@@ -15,11 +15,10 @@ from scipy import stats
 from statannot import add_stat_annotation
 
 # Generate dataframe
-df = pd.read_csv(r'L:\ASD\Checkout_Results\210708_SynapsesD30_Drugs\agASD-60X-260521-Exp26-Hit-MAPK-pl1-Synapsin-MAP2-Homer-AT.csv') #_normed
+df = pd.read_csv(r'L:\ASD\Checkout_Results\210720_Exp26-p2\agASD-Exp26-x60-compounds-Map2-Syn1-Shank3-p2-AV.csv') #_normed
 
 # Data wrangling and renaming
 df.loc[df['tags'].str.contains('HT3;LiCl'), 'tags'] = 'LiCl;HT3'
-df_columns = df.columns
 
 # Drop outliers based on z-score threshold
 # Dataframe is pre-processed to exclude inf values or columns with only single value since this won't allow z-score calculation
@@ -38,11 +37,16 @@ def drop_numerical_outliers(df, z_thresh=3):
     
 drop_numerical_outliers(df)
 
-# What to plot
+# Which columns are left?
+df_columns = df.columns
+
+df['synapses_per_nuc'] = df['synap']/df['Nuclei_Tot']
+
+# What to plot?
 data = df
 xgrouping = 'tags'
 hue = "Plate"
-datacolumn = 'synapses_per_nuclei'
+datacolumn = 'synapses_per_nuc'
 medianline = 'DMSO;HT3'
 ytitle = datacolumn
 #xtitle = 'LiCl (mM)'
