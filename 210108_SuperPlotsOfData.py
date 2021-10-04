@@ -25,51 +25,58 @@ import seaborn as sns
 from scipy import stats
 from statannot import add_stat_annotation
 
-# Generate dataframes containing individual replicates
-df = pd.read_csv(r'L:\PD\Experiment\Maturation_36\Output_Data\CSV\raw_data_normed_median_dmso_snca.csv')
+# Generate dataframe
+df = pd.read_csv(r'L:\PD\Experiment\Maturation_26\Output_Data\CSV\raw_data.csv') #_normed
 
-# Data wrangling if needed
-
-# # Drop columns which are not needed
-# df = df.drop(columns=['Nuclei_Big'])
-
-# # Rename some data tags for consistency
-# df.loc[df['tags'].str.contains('TEST123'), 'tags'] = 'TESTABC' 
-# df.loc[df['tags'].str.contains('TEST456'), 'tags'] = 'TESTDEF' 
+# Data wrangling and renaming
+df = df[df.tags.str.contains("no treat")] # Add ~df.tags.str.contains("no treat") to exclude, remove to include
+df = df[~df.tags.str.contains("Edi001A1/2")]
+df.loc[df['tags'].str.contains('A18944'), 'tags'] = 'GIBCO control'
+df.loc[df['tags'].str.contains('c89bmS4'), 'tags'] = 'C89 control'
+df.loc[df['tags'].str.contains('Edi001A'), 'tags'] = 'SNCA triplication'
 
 # Adjust organisation for plotting
 df = df.sort_values(['tags', 'Plate']) # Sorting is necessary to plot averages accurately on dataclouds
 df_columns = df.columns
-combined = df
 
-# # Drop outliers based on z-score threshold
-# def drop_numerical_outliers(combined, z_thresh=3):
-#     # Constrains will contain `True` or `False` depending on if it is a value below the threshold.
-#     constrains = combined.select_dtypes(include=[np.number]) \
-#         .apply(lambda x: np.abs(stats.zscore(x, nan_policy='omit')) < z_thresh) \
-#         .all(axis=1)
-#     # Drop (inplace) values set to be rejected
-#     combined.drop(combined.index[~constrains], inplace=True)
+# Drop outliers based on z-score threshold
+# Dataframe is pre-processed to exclude inf values or columns with only single value since this won't allow z-score calculation
+df.replace([np.inf, -np.inf], np.nan, inplace=True)     # Change all inf for NaN
+df_numbers = df.select_dtypes(include=[np.number])      # Choose only numerical values
+nunique = df_numbers.nunique()                          # Number of unique values per column
+cols_to_drop = nunique[nunique < 2].index               # Identify columns with only 1 value (= same number) or 0 values (= all NaN)
+df = df.drop(cols_to_drop, axis=1)                      # Drop all these columns from main dataframe
+def drop_numerical_outliers(df, z_thresh=3):
+    # Constrains will contain `True` or `False` depending on if it is a value below the threshold.
+    constrains = df.select_dtypes(include=[np.number]) \
+        .apply(lambda x: np.abs(stats.zscore(x, nan_policy='omit')) < z_thresh) \
+        .all(axis=1)
+    # Drop (inplace) values set to be rejected
+    df.drop(df.index[~constrains], inplace=True)
     
-# drop_numerical_outliers(combined)
+drop_numerical_outliers(df)
 
 # Data for plotting and statistics calculations
 xgrouping = "tags" # Treatment Category
 replicate = "Plate" #Kind of used replicate
-datacolumn = "avg_intensity_SNCA" # Nuclei_Tot, Nuclei_dead, avg_intensity_SNCA, sum_intensity_per_nuclei_SNCA
+datacolumn = "branching_points_MAP2_per_nuclei" # Nuclei_Tot, Nuclei_dead, avg_intensity_SNCA, sum_intensity_per_nuclei_SNCA
                                    # ratio_nuclei_MAP2, surface_MAP2, branching_points_MAP2_per_nuclei, skelet_length_MAP2_per_nuclei
-ytitle = 'Norm.' + ' ' + datacolumn
-plot_order=["Ctrl;DMSO", "Ctrl;PEP005", "Ctrl;Prostratin", "Tripli;DMSO", "Tripli;PEP005", "Tripli;Prostratin"]
+ytitle = datacolumn
+plot_order=["GIBCO control", "C89 control", "SNCA triplication"]
+stat_pairs = [("GIBCO control", "C89 control"), ("GIBCO control", "SNCA triplication"), ("SNCA triplication", "C89 control")]
+test='t-test_welch' # Test value should be one of the following: t-test_ind, t-test_welch, t-test_paired, 
+                    # Mann-Whitney, Mann-Whitney-gt, Mann-Whitney-ls, Levene, Wilcoxon, Kruskal
+                    # Mann-Whitney can be used to compare differences between two independent groups when the dependent variable 
+                    # is either ordinal or continuous, but not normally distributed. Good non-parametric alternative for t-test.     
 
 # Generating a SuperPlotOfData
 
 # Create new figure and two subplots
-ax = sns.set_context("talk", font_scale=1.5, rc={"lines.linewidth": 3})
-
-ReplicateAverages = combined.groupby([xgrouping, replicate], as_index=False).agg({datacolumn: "median"})
+ax = sns.set_context("talk", font_scale=1.3) #rc={"lines.linewidth": 3}
+ReplicateAverages = df.groupby([xgrouping, replicate], as_index=False).agg({datacolumn: "median"})
 ReplicateAverages = ReplicateAverages.sort_values(['tags', 'Plate']) # Sorting is necessary to plot averages accurately on dataclouds
 
-ax = sns.stripplot(x=xgrouping, y=datacolumn, hue=replicate, size=7, data=combined, order=plot_order) 
+ax = sns.stripplot(x=xgrouping, y=datacolumn, hue=replicate, size=7, data=df, order=plot_order) 
 ax = sns.stripplot(x=xgrouping, y=datacolumn, hue=replicate, size=20, edgecolor="k", linewidth=2, data=ReplicateAverages, order=plot_order)
 
 # Figure aesthetics
@@ -81,11 +88,11 @@ ax.set_xticklabels(ax.get_xticklabels(),rotation=45, ha='right', rotation_mode="
 sns.despine()
 
 # OPTION 1: Stats plotting for total population of all technical replicates from all biological replicates. Careful: High N = small p-value. Look at effect size!
-add_stat_annotation(ax, data=combined, x=xgrouping, y=datacolumn, order=plot_order,
-                    box_pairs=[("Ctrl;DMSO", "Tripli;DMSO"), ("Ctrl;DMSO", "Ctrl;PEP005"), ("Tripli;DMSO", "Tripli;PEP005")],
-                    test='t-test_welch', text_format='star', loc='outside', verbose=2)
+add_stat_annotation(ax, data=df, x=xgrouping, y=datacolumn, order=plot_order,
+                    box_pairs=stat_pairs,
+                    test=test, text_format='star', loc='outside', verbose=2)
 
 # # OPTION 2: Stats plotting only for means of biological replicates.   
 # add_stat_annotation(ax, data=ReplicateAverages, x=xgrouping, y=datacolumn, order=plot_order,
-#                     box_pairs=[("Ctrl;DMSO", "Tripli;DMSO"), ("Ctrl;DMSO", "Ctrl;PEP005"), ("Tripli;DMSO", "Tripli;PEP005")],
-#                     test='t-test_welch', text_format='star', loc='outside', verbose=2)
+#                     box_pairs=stat_pairs,
+#                     test=test, text_format='star', loc='outside', verbose=2)
