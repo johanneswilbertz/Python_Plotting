@@ -15,28 +15,46 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
 from statannot import add_stat_annotation
+from sys import exit
 
 # Plot all image features ('yes') or only select ones ('no')?
 plot_all_features = 'no'
+plot_QC = 'yes'
 
 # Specify input & generate dataframe
 df = pd.read_csv(r'L:\PD\Experiment\Maturation_49\ICC\CSV\agSNCA-Mat49-x40-ICC-MAP2-SNCA-TH-AV.csv')
 if plot_all_features == 'yes':
     results_dir = 'L:\\PD\Experiment\\Maturation_49\\ICC\Graphs\\' # use double backslash, otherwise interpreted as "escape"
     plt.rcParams["savefig.directory"] = os.chdir(os.path.dirname(results_dir))
-df = df[df['tags'].notna()]
+df = df[df['tags'].notna()]           # only in this case
+df = df.drop('PD#20211126_134344', 1) # only in this case
 df2 = df.copy()
 
 # Get unique data tags/categories
 unique_tags = df['tags'].unique()
 print(unique_tags)
 
-# # Data wrangling and renaming if needed
-# df['tags'] = df['Condition'] + ' ' + df['Concentration'] + ' ' + df['CPD_ID']
-# df.loc[df['tags'].str.contains('WT2 0µM DMSO'), 'tags'] = 'WT2 DMSO'
-# df.loc[df['tags'].str.contains('HT3 0µM DMSO'), 'tags'] = 'HT3 DMSO'
-# df2 = df.copy()
-
+# Plot data as heatmeap using column/row format for QC purposes
+if plot_QC == 'yes':
+    
+    df_columns = df.columns
+    
+    # Extract rows and columns
+    df['Row'] = df['Well'].astype(str).str[0]
+    df['Column'] = df['Well'].astype(str).str[1:3]
+    
+    # Heatmap input
+    cmap = 'vlag'
+    datacolumn = 'Cell_Intensity_MeanIntensity_TH'
+    title = datacolumn
+    
+    pivot = df.pivot(index='Row', columns='Column', values=datacolumn)
+    ax = sns.heatmap(pivot,annot=False, cmap=cmap)
+    plt.title(title)
+    plt.show()
+    
+    exit()
+    
 # Filter outliers based on sigma threshold per data category (IF DIFFERENT PLATES ARE USED  NORMALIZE THEM FIRST)
 list_df_tag = []
 for tag in unique_tags:
@@ -70,7 +88,7 @@ df_columns = df.columns
 data = df
 xgrouping = 'tags'
 #hue = "Plate"
-datacolumn = 'Nuclei_Number_Living' # 'Cell_TH_SNCA_Intensity_SumIntensityPerNuclei_SNCA', Cell_TH_SNCA_Intensity_MeanIntensity_SNCA
+datacolumn = 'Cell_TH_SNCA_Intensity_MeanIntensity_SNCA' # 'Cell_TH_SNCA_Intensity_SumIntensityPerNuclei_SNCA', Cell_TH_SNCA_Intensity_MeanIntensity_SNCA
 medianline = 'WT DMSO'
 ytitle = datacolumn
 #xtitle = 'LiCl (mM)'
