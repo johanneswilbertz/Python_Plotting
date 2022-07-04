@@ -19,20 +19,37 @@ from sys import exit
 
 # Plot all image features ('yes') or only select ones ('no')?
 plot_all_features = 'no'
-plot_QC = 'yes'
+plot_QC = 'no'
 
-# Specify input & generate dataframe
-df = pd.read_csv(r'L:\PD\Experiment\Maturation_49\ICC\CSV\agSNCA-Mat49-x40-ICC-MAP2-SNCA-TH-AV.csv')
-if plot_all_features == 'yes':
-    results_dir = 'L:\\PD\Experiment\\Maturation_49\\ICC\Graphs\\' # use double backslash, otherwise interpreted as "escape"
-    plt.rcParams["savefig.directory"] = os.chdir(os.path.dirname(results_dir))
-df = df[df['tags'].notna()]           # only in this case
-df = df.drop('PD#20211126_134344', 1) # only in this case
-df2 = df.copy()
+# Merge all relevant .csv files from all subdirectories into a single dataframe
+path = "L:\\PROJECTS\\PD\\Experiment\\Maturation_61_2\\220530_PD_Exp61\\"
+appended_data = []
 
-# Get unique data tags/categories
+for filename in os.listdir(path):
+    if '.fth' in filename and filename[0:2]=='ag':
+        df_current  = pd.read_feather(path+'\\' + '\\'+ filename)
+        #print(len(df_current.index))
+        #df_current['Directory'] = directory
+        appended_data.append(df_current)
+df = pd.concat(appended_data).reset_index()
+df = df.drop(columns='index')
+
+# Get unique data tags/categories/columns
+df_columns = df.columns
 unique_tags = df['tags'].unique()
-print(unique_tags)
+print("ORIGINAL: ", unique_tags)
+
+# Correct tags
+df['tags'] = df['tags'].replace({'rawA': 'Row A'}, regex=True)
+df['tags'] = df['tags'].replace({'rawP': 'Row P'}, regex=True)
+df['tags'] = df['tags'].replace({'raw A': 'Row A'}, regex=True)
+df['tags'] = df['tags'].replace({'raw P': 'Row P'}, regex=True)
+
+# Make new data columns for plotting
+df[['tags2', 'DoD']] = df['tags'].str.split(':', 1, expand=True)
+
+unique_tags = df['tags'].unique()
+print("EDITED: ", unique_tags)
 
 # Plot data as heatmeap using column/row format for QC purposes
 if plot_QC == 'yes':
@@ -55,34 +72,31 @@ if plot_QC == 'yes':
     
     exit()
     
-# Filter outliers based on sigma threshold per data category (IF DIFFERENT PLATES ARE USED  NORMALIZE THEM FIRST)
-list_df_tag = []
-for tag in unique_tags:
-    df_tag = df.loc[df['tags'] == tag]
+# # Filter outliers based on sigma threshold per data category (IF DIFFERENT PLATES ARE USED  NORMALIZE THEM FIRST)
+# list_df_tag = []
+# for tag in unique_tags:
+#     df_tag = df.loc[df['tags'] == tag]
     
-    # Dataframe is pre-processed to exclude inf values or columns with only single value since this won't allow z-score calculation
-    df_tag.replace([np.inf, -np.inf], np.nan, inplace=True)     # Change all inf for NaN
-    df_numbers = df_tag.select_dtypes(include=[np.number])      # Choose only numerical values
-    nunique = df_numbers.nunique()                              # Number of unique values per column
-    cols_to_drop = nunique[nunique < 2].index                   # Identify columns with only 1 value (= same number) or 0 values (= all NaN)
-    df_tag = df_tag.drop(cols_to_drop, axis=1)                  # Drop all these columns from main dataframe 
+#     # Dataframe is pre-processed to exclude inf values or columns with only single value since this won't allow z-score calculation
+#     df_tag.replace([np.inf, -np.inf], np.nan, inplace=True)     # Change all inf for NaN
+#     df_numbers = df_tag.select_dtypes(include=[np.number])      # Choose only numerical values
+#     nunique = df_numbers.nunique()                              # Number of unique values per column
+#     cols_to_drop = nunique[nunique < 2].index                   # Identify columns with only 1 value (= same number) or 0 values (= all NaN)
+#     df_tag = df_tag.drop(cols_to_drop, axis=1)                  # Drop all these columns from main dataframe 
     
-    # Drop outliers based on z-score threshold
-    def drop_numerical_outliers(df_tag, z_thresh=3):
-        # Constrains will contain `True` or `False` depending on if it is a value below the threshold.
-        constrains = df_tag.select_dtypes(include=[np.number]) \
-            .apply(lambda x: np.abs(stats.zscore(x, nan_policy='omit')) < z_thresh) \
-            .all(axis=1)
-        # Drop (inplace) values set to be rejected
-        df_tag.drop(df_tag.index[~constrains], inplace=True)
+#     # Drop outliers based on z-score threshold
+#     def drop_numerical_outliers(df_tag, z_thresh=3):
+#         # Constrains will contain `True` or `False` depending on if it is a value below the threshold.
+#         constrains = df_tag.select_dtypes(include=[np.number]) \
+#             .apply(lambda x: np.abs(stats.zscore(x, nan_policy='omit')) < z_thresh) \
+#             .all(axis=1)
+#         # Drop (inplace) values set to be rejected
+#         df_tag.drop(df_tag.index[~constrains], inplace=True)
         
-    drop_numerical_outliers(df_tag)
-    list_df_tag.append(df_tag)
+#     drop_numerical_outliers(df_tag)
+#     list_df_tag.append(df_tag)
     
-df = pd.concat(list_df_tag)
-
-# Which columns are left after outlier removal?
-df_columns = df.columns
+# df = pd.concat(list_df_tag)
                          
 # What to plot?
 data = df
@@ -92,9 +106,24 @@ datacolumn = 'Cell_TH_SNCA_Intensity_MeanIntensity_SNCA' # 'Cell_TH_SNCA_Intensi
 medianline = 'WT DMSO'
 ytitle = datacolumn
 #xtitle = 'LiCl (mM)'
-order= ['WT DMSO', 'WT Prostratin', 'Tripli DMSO', 'Tripli Prostratin']  
-stat_pairs = [('WT DMSO', 'WT Prostratin'), ('WT DMSO', 'Tripli DMSO'),
-              ('Tripli DMSO', 'Tripli Prostratin')]
+order= ['DMSO;WT',
+        'DMSO;Tripli', 
+        'DMSO Row A;Tripli', 
+        'DMSO Row P;Tripli',
+        'DMSO CTRL;Tripli', 
+        'DMSO CTRL Row A;Tripli',
+        'DMSO CTRL Row P;Tripli',
+        'Prostratin;Tripli', 
+        'Prostratin Row A;Tripli',
+        'Prostratin Row P;Tripli',
+        'Prostratin CTRL;Tripli',
+        'Prostratin CTRL Row A;Tripli',
+        'Prostratin CTRL Row P;Tripli'
+        ] 
+stat_pairs = [('DMSO;WT', 'DMSO;Tripli'), 
+              ('DMSO;Tripli', 'Prostratin;Tripli'), 
+              ('DMSO;Tripli', 'DMSO Row A;Tripli'), 
+              ('DMSO;Tripli', 'DMSO Row P;Tripli')]
 stat_test = 'Mann-Whitney'  # Test value should be one of the following: t-test_ind, t-test_welch, t-test_paired, 
                             # Mann-Whitney, Mann-Whitney-gt, Mann-Whitney-ls, Levene, Wilcoxon, Kruskal
                             
@@ -109,8 +138,20 @@ pal = sns.color_palette()   # Get all color codes
 pal = pal.as_hex()          # Transform color codes to hexformat
 #sns.color_palette(['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd'])
 # use colors in this order
-palette = {'WT DMSO': '#1f77b4', 'WT Prostratin': '#ff7f0e', 
-           'Tripli DMSO': '#2ca02c', 'Tripli Prostratin': '#d62728'} 
+palette = {'DMSO;WT': '#1f77b4',
+           'DMSO;Tripli': '#ff7f0e', 
+           'DMSO Row A;Tripli': '#ff7f0e',
+           'DMSO Row P;Tripli': '#ff7f0e',
+           'DMSO CTRL;Tripli': '#ff7f0e', 
+           'DMSO CTRL Row A;Tripli': '#ff7f0e',
+           'DMSO CTRL Row P;Tripli': '#ff7f0e',
+           'Prostratin;Tripli': '#2ca02c', 
+           'Prostratin Row A;Tripli': '#2ca02c',
+           'Prostratin Row P;Tripli': '#2ca02c',
+           'Prostratin CTRL;Tripli': '#2ca02c',
+           'Prostratin CTRL Row A;Tripli': '#2ca02c',
+           'Prostratin CTRL Row P;Tripli': '#2ca02c'
+           }  
 
 if plot_all_features == 'no':
     ax = sns.set_context("talk")

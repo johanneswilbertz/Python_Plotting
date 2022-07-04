@@ -26,7 +26,7 @@ from scipy import stats
 from statannot import add_stat_annotation
 
 # Generate dataframe
-df = pd.read_csv(r'L:\PD\Experiment\Maturation_26\Output_Data\CSV\raw_data.csv') #_normed
+df = pd.read_csv(r'L:\PROJECTS\PD\Experiment\Maturation_26\Output_Data\CSV\raw_data.csv') #_normed
 
 # Data wrangling and renaming
 df = df[df.tags.str.contains("no treat")] # Add ~df.tags.str.contains("no treat") to exclude, remove to include
@@ -39,22 +39,22 @@ df.loc[df['tags'].str.contains('Edi001A'), 'tags'] = 'SNCA triplication'
 df = df.sort_values(['tags', 'Plate']) # Sorting is necessary to plot averages accurately on dataclouds
 df_columns = df.columns
 
-# Drop outliers based on z-score threshold
-# Dataframe is pre-processed to exclude inf values or columns with only single value since this won't allow z-score calculation
-df.replace([np.inf, -np.inf], np.nan, inplace=True)     # Change all inf for NaN
-df_numbers = df.select_dtypes(include=[np.number])      # Choose only numerical values
-nunique = df_numbers.nunique()                          # Number of unique values per column
-cols_to_drop = nunique[nunique < 2].index               # Identify columns with only 1 value (= same number) or 0 values (= all NaN)
-df = df.drop(cols_to_drop, axis=1)                      # Drop all these columns from main dataframe
-def drop_numerical_outliers(df, z_thresh=3):
-    # Constrains will contain `True` or `False` depending on if it is a value below the threshold.
-    constrains = df.select_dtypes(include=[np.number]) \
-        .apply(lambda x: np.abs(stats.zscore(x, nan_policy='omit')) < z_thresh) \
-        .all(axis=1)
-    # Drop (inplace) values set to be rejected
-    df.drop(df.index[~constrains], inplace=True)
+# # Drop outliers based on z-score threshold
+# # Dataframe is pre-processed to exclude inf values or columns with only single value since this won't allow z-score calculation
+# df.replace([np.inf, -np.inf], np.nan, inplace=True)     # Change all inf for NaN
+# df_numbers = df.select_dtypes(include=[np.number])      # Choose only numerical values
+# nunique = df_numbers.nunique()                          # Number of unique values per column
+# cols_to_drop = nunique[nunique < 2].index               # Identify columns with only 1 value (= same number) or 0 values (= all NaN)
+# df = df.drop(cols_to_drop, axis=1)                      # Drop all these columns from main dataframe
+# def drop_numerical_outliers(df, z_thresh=3):
+#     # Constrains will contain `True` or `False` depending on if it is a value below the threshold.
+#     constrains = df.select_dtypes(include=[np.number]) \
+#         .apply(lambda x: np.abs(stats.zscore(x, nan_policy='omit')) < z_thresh) \
+#         .all(axis=1)
+#     # Drop (inplace) values set to be rejected
+#     df.drop(df.index[~constrains], inplace=True)
     
-drop_numerical_outliers(df)
+# drop_numerical_outliers(df)
 
 # Data for plotting and statistics calculations
 xgrouping = "tags" # Treatment Category
@@ -87,12 +87,12 @@ ax.set(ylabel=ytitle)
 ax.set_xticklabels(ax.get_xticklabels(),rotation=45, ha='right', rotation_mode="anchor")
 sns.despine()
 
-# OPTION 1: Stats plotting for total population of all technical replicates from all biological replicates. Careful: High N = small p-value. Look at effect size!
-add_stat_annotation(ax, data=df, x=xgrouping, y=datacolumn, order=plot_order,
-                    box_pairs=stat_pairs,
-                    test=test, text_format='star', loc='outside', verbose=2)
-
-# # OPTION 2: Stats plotting only for means of biological replicates.   
-# add_stat_annotation(ax, data=ReplicateAverages, x=xgrouping, y=datacolumn, order=plot_order,
+# # OPTION 1: Stats plotting for total population of all technical replicates from all biological replicates. Careful: High N = small p-value. Look at effect size!
+# add_stat_annotation(ax, data=df, x=xgrouping, y=datacolumn, order=plot_order,
 #                     box_pairs=stat_pairs,
 #                     test=test, text_format='star', loc='outside', verbose=2)
+
+# OPTION 2: Stats plotting only for means of biological replicates.   
+add_stat_annotation(ax, data=ReplicateAverages, x=xgrouping, y=datacolumn, order=plot_order,
+                    box_pairs=stat_pairs,
+                    test=test, text_format='star', loc='outside', verbose=2)

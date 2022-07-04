@@ -8,12 +8,24 @@ Johannes Wilbertz, PhD (Ksilink) 30 Sep 2021
 
 import numpy as np
 import pandas as pd
+import os
 
-# Generate dataframe
-df = pd.read_csv(r'L:\PD\Experiment\Maturation_46\PD_Exp46_p1_p2_MT-TMRM_LDA-ready.csv')
+# Merge all relevant .csv files from all subdirectories into a single dataframe
+path = "L:\\PROJECTS\\PD\\Experiment\\Maturation_61_2\\220530_PD_Exp61\\"
+output_path = r'L:\PROJECTS\PD\Experiment\Maturation_61_2\220530_PD_Exp61\220531_PD_Exp61_normalized.csv'
+appended_data = []
+
+for filename in os.listdir(path):
+    if '.fth' in filename and filename[0:2]=='ag':
+        df_current  = pd.read_feather(path+'\\' + '\\'+ filename)
+        #print(len(df_current.index))
+        #df_current['Directory'] = directory
+        appended_data.append(df_current)
+df = pd.concat(appended_data).reset_index()
+df = df.drop(columns='index')
 
 # To which reference group should everything be normalized?
-reference_group = "Ctrl;DMSO"
+reference_group = "DMSO CTRL;Tripli"
 
 # Get titles of numeric columns for normalization
 df_numbers = df.select_dtypes(include=[np.number])
@@ -49,4 +61,4 @@ normalized_df = pd.concat(list_df_group)
 df_grouped = normalized_df.groupby(['Plate', 'tags']).median()
 
 # Save as CSV file
-normalized_df.to_csv(r'L:\PD\Experiment\Maturation_46\PD_Exp46_p1_p2_normalized.csv', index = False)
+normalized_df.to_csv(output_path, index = False)
